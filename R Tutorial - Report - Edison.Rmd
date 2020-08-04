@@ -1,8 +1,10 @@
 ---
 title: "R Tutorial - Report"
 author: "Edison Guevara"
-date: "9 10 2019"
-output: html_document
+date: "9.10.2019"
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 # Setting up R Studio
@@ -43,6 +45,7 @@ As can be seen in the histogram of distance, there is one outlier (observation o
 
 1 --> cars speed
 2 --> cars distance
+
 ```{r echo=FALSE}
 boxplot(cars$speed, cars$distance)
 plot(cars$speed, cars$distance)
