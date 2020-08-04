@@ -1,6 +1,5 @@
 # R Tutorial - Report
-author: Edison Guevara
-date: 9.10.2019
+author: Edison Guevara   date: 9.10.2019
 
 Introductory tutorial to data analytics with R.
 
