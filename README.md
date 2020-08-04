@@ -1,0 +1,195 @@
+---
+title: "R Tutorial - Report"
+author: "Edison Guevara"
+date: "9 10 2019"
+output: html_document
+---
+
+# Setting up R Studio
+```{r message=FALSE, warning=FALSE}
+library(readr)
+library(tidyverse)
+library(ggplot2)
+```
+
+# Predicting braking distance of cars based on speed
+## Importing dataset
+
+The data of different brands of cars has been considered for this analysis. The dataset used contains 50 observations. 
+```{r}
+cars <- read_csv("~/Ubiqum/Data Analytics Course/Module II/Task 1/R Tutorial Data/cars.csv")
+```
+
+## Exploring the data
+```{r}
+summary(cars)
+str(cars)
+attributes(cars)
+```
+
+For convenicen the headers of the data frame have been chenged as follows:
+```{r}
+names(cars) <- c("brand", "speed", "distance")
+```
+### Histograms
+```{r include=TRUE}
+hist(cars$speed, breaks = 25)
+hist(cars$distance, breaks = 120)
+```
+
+As can be seen in the histogram of distance, there is one outlier (observation on the far right). This can be more clearly seen in the boxplot below.
+
+### Other plots 
+
+1 --> cars speed
+2 --> cars distance
+```{r echo=FALSE}
+boxplot(cars$speed, cars$distance)
+plot(cars$speed, cars$distance)
+```
+
+Looking at the boxplot for the cars distance (2) one outlier can be spoted with a value of 120.
+
+### Normal Q-Q Plot for cars speed
+```{r echo=FALSE}
+qqnorm(cars$speed)
+```
+
+In the figure above it can be appreciated that the distribution of car speeds is close to a normal distribution.
+
+### Normal Q-Q Plot for cars braking distance
+```{r echo=FALSE}
+qqnorm(cars$distance)
+```
+
+The figure above shows that the distribution of cars braking distances is less normal than the one of cars speeds.
+
+
+### Variable transformation
+
+Considering that the brake distance is as per the laws of physics correlated to the speed to the power of two (2), the independent variable will be transformed as speed^2.
+
+```{r}
+cars_trans <- cars
+names(cars_trans) <- c("brand", "speed2", "distance")
+cars_trans$speed2 <- cars$speed * cars$speed
+ggplot(cars_trans, aes(speed2, distance)) + geom_point()
+```
+
+It can be seen in the figure above that the relationship between braking distance and speed^2 is closed to a stright line.
+
+### Removing outliers
+```{r}
+outlier_value <- boxplot(cars_trans$distance, plot = F)$out
+outlier_index <- which(cars_trans$distance == outlier_value)
+cars_no_outlier <- cars_trans[-outlier_index,]
+ggplot(cars_no_outlier, aes(speed2, distance)) + geom_point()
+```
+
+## Modeling - Linear regression
+### Creating testing and training sets
+```{r}
+set.seed(123)
+trainsize <- round(nrow(cars_no_outlier)*.7)
+testsize <- nrow(cars_no_outlier) - trainsize
+trainsize
+testsize
+training_indices <- sample(seq_len(nrow(cars_no_outlier)), trainsize)
+trainset <- cars_no_outlier[training_indices,]
+testset <- cars_no_outlier[-training_indices,]
+```
+
+Trainset
+```{r echo=FALSE}
+trainset
+```
+
+Testset
+```{r echo=F}
+testset
+```
+
+### Training the model - linear regression
+
+In the table below the error metrics of the linear regression are summarized. To highlight is the following:
+
+- The R2 is of 0.99 which denotes a very good fit to the data points.
+- t-values are 3.982 for Intercept and 55.337 for speed's coeficient. Since both are > 2 we can saz there is a strong correlation between the distance and speed, which we expect to be.
+- p-value: < 2.2e-16. P-value lower than 0.05 accounts also for a high correlation
+```{r}
+lm_cars <- lm(distance ~ speed2, trainset)
+summary(lm_cars)
+```
+### Testing the model - prediction on test sample
+```{r}
+prediction_cars <- predict(lm_cars, testset)
+error_pred_cars <- testset$distance - prediction_cars
+testset <- cbind(testset, prediction_cars, error_pred_cars)
+testset$abs_error <- abs(testset$error_pred_cars)
+```
+
+Testset showing prediction and error of predictions
+
+```{r}
+testset
+```
+
+The MAE of the prediction is the following:
+
+```{r}
+mean(testset$abs_error)
+```
+
+In the figure below it can be seen the data points of the testset together with the predicted distance values.
+```{r}
+ggplot(testset, aes(speed2)) + geom_point(aes(y = distance), color = "blue") + geom_line(aes(y = prediction_cars), color = "orange")
+```
+
+# Predicting petal width based on petal length
+
+## Importing dataset
+```{r}
+IrisDataset <- read.csv("~/Ubiqum/Data Analytics Course/Module II/Task 1/R Tutorial Data/iris.csv", header=TRUE, sep=",")
+```
+
+## Exploring the data
+```{r}
+attributes(IrisDataset)
+summary(IrisDataset)
+str(IrisDataset)
+names(IrisDataset)
+IrisDataset$Species<- as.numeric(IrisDataset$Species)
+hist(IrisDataset$Species)
+hist(IrisDataset$Petal.Length, breaks = 50)
+boxplot(IrisDataset$Petal.Length)
+hist(IrisDataset$Petal.Width, breaks = 50)
+boxplot(IrisDataset$Petal.Width)
+ggplot(IrisDataset, aes(Petal.Length, Petal.Width)) + geom_point()
+qqnorm(IrisDataset$Petal.Length)
+```
+
+## Training the model - linear regression
+```{r}
+set.seed(123)
+trainSize <- round(nrow(IrisDataset) * 0.2)
+testSize <- nrow(IrisDataset) - trainSize
+trainSize
+testSize
+train_indic <- sample(seq_len(nrow(IrisDataset)),trainSize)
+trainSet <- IrisDataset[train_indic, ]
+testSet <- IrisDataset[-train_indic, ]
+set.seed(405)
+trainSet <- IrisDataset[train_indic, ]
+testSet <- IrisDataset[-train_indic, ]
+lm_iris <- lm(Petal.Width ~ Petal.Length, trainSet)
+summary(lm_iris)
+```
+
+### Testing the model - prediction on test sample
+```{r}
+prediction_iris <- predict(lm_iris, testSet)
+error_pred_iris <- testSet$Petal.Width - prediction_iris
+testSet <- cbind(testSet, prediction_iris, error_pred_iris)
+ggplot(testSet, aes(Petal.Length)) + geom_point(aes(y = Petal.Width), color = "blue") + geom_line(aes(y = prediction_iris), color = "orange")
+```
+
